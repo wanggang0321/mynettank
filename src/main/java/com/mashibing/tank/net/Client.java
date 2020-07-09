@@ -80,7 +80,7 @@ class ClientChannelInitializer extends ChannelInitializer<SocketChannel> {
 		ch.pipeline()
 			//XXXEncoder、XXXDecoder也是channelHandler的一种
 			//即它们也是责任链上的一种责任
-			.addLast(new TankMsgEncoder())
+			.addLast(new TankJoinMsgEncoder())
 			.addLast(new ClientHandler());
 	}
 }
@@ -118,6 +118,6 @@ class ClientHandler extends ChannelInboundHandlerAdapter {
 		//ctx.writeAndFlush(buf);
 		
 		//TankMsgEncode可以将TankMsg转换为ByteBuf
-		ctx.writeAndFlush(new TankMsg(5, 8));
+		ctx.writeAndFlush(null);
 	}
 }

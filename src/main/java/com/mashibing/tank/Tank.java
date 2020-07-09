@@ -3,6 +3,7 @@ package com.mashibing.tank;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.util.Random;
+import java.util.UUID;
 
 public class Tank {
 	private static final int SPEED = 2;
@@ -11,6 +12,8 @@ public class Tank {
 	public static int HEIGHT = ResourceMgr.goodTankU.getHeight();
 	
 	Rectangle rect = new Rectangle();
+	
+	UUID id = UUID.randomUUID();
 	
 	private Random random = new Random();
 
@@ -154,6 +157,12 @@ public class Tank {
 	}
 	public void die() {
 		this.living = false;
+	}
+	public UUID getId() {
+		return UUID.randomUUID();
+	}
+	public void setId(UUID id) {
+		this.id = id;
 	}
 	
 	
