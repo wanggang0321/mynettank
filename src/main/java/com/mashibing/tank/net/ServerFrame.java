@@ -26,8 +26,8 @@ public class ServerFrame extends Frame {
 	Server server = new Server();
 	
 	private ServerFrame() {
-		this.setSize(1600, 300);
-		this.setLocation(300, 30);
+		this.setSize(800, 300);
+		this.setLocation(1000, 30);
 		this.add(btnStart, BorderLayout.NORTH);
 		Panel p = new Panel(new GridLayout(1, 2));
 		p.add(taLeft);

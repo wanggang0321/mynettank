@@ -1,7 +1,6 @@
 package com.mashibing.tank.net;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -13,7 +12,6 @@ import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.GlobalEventExecutor;
 
 public class Server {
@@ -38,7 +36,7 @@ public class Server {
 						protected void initChannel(SocketChannel ch) throws Exception {
 							ChannelPipeline pl = ch.pipeline();
 							pl.addLast(new TankJoinMsgDecoder())
-							.addLast(new ServerChildHandler());
+								.addLast(new ServerChildHandler());
 						}
 					})
 					.bind(8888)
@@ -55,7 +53,6 @@ public class Server {
 			workerGroup.shutdownGracefully();
 		}
 	}
-	
 }
 
 //server和client获得的channel肯定不是同一个，因为他们都不在同一台机器上
@@ -68,30 +65,24 @@ public class Server {
 //ChannelHandlerContext也有.channel()方法，拿到对应的channel
 //ChannelHandlerContext和channel之间是聚合关系，context中有channel
 class ServerChildHandler extends ChannelInboundHandlerAdapter {
-
+	
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
 		//有clinet连接上来
 		Server.clients.add(ctx.channel());
+		ServerFrame.getInstance().updateServerMsg("有新玩家上线，目前在线人数：" + Server.clients.size());
 	}
-
+	
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-		try {
-			
-			//channel里的ByteBuf经过TankMsgDecoder直接转换为了TankMsg
-			TankJoinMsg tm = (TankJoinMsg) msg;
-			System.out.println(tm);
-		} finally {
-			//手动释放buf
-			ReferenceCountUtil.release(msg);
-		}
+		Server.clients.writeAndFlush(msg);
 	}
-
+	
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
 		cause.printStackTrace();
 		Server.clients.remove(ctx.channel());
+		ServerFrame.getInstance().updateServerMsg("玩家下线，目前在线人数：" + Server.clients.size());
 		//通知client执行f.channel().closeFuture().sync();回调函数
 		ctx.close();
 	}

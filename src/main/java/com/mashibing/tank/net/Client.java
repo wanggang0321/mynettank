@@ -1,5 +1,8 @@
 package com.mashibing.tank.net;
 
+import com.mashibing.tank.Tank;
+import com.mashibing.tank.TankFrame;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -10,6 +13,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -36,12 +40,12 @@ public class Client {
 					.channel(NioSocketChannel.class) //指定连接到服务器的channel类型
 					.handler(new ClientChannelInitializer()) //当channel上有事件的时候，交给哪个handler处理
 					.connect("localhost", 8888);
-					
+				
 			f.addListener(new ChannelFutureListener() {
 				@Override
 				public void operationComplete(ChannelFuture future) throws Exception {
 					if(future.isSuccess()) {
-						System.out.println("connected!");
+						System.out.println("Server connected!");
 						//channel在确认client连接server成功之后，初始化
 						channel = future.channel();
 					} else {
@@ -81,30 +85,13 @@ class ClientChannelInitializer extends ChannelInitializer<SocketChannel> {
 			//XXXEncoder、XXXDecoder也是channelHandler的一种
 			//即它们也是责任链上的一种责任
 			.addLast(new TankJoinMsgEncoder())
+			.addLast(new TankJoinMsgDecoder())
 			.addLast(new ClientHandler());
 	}
 }
 
-class ClientHandler extends ChannelInboundHandlerAdapter {
-
-	@Override
-	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-		ByteBuf buf = null;
-		try {
-			buf = (ByteBuf) msg;
-			byte[] bytes = new byte[buf.readableBytes()];
-			buf.getBytes(buf.readerIndex(), bytes);
-			String msgAccepted = new String(bytes);
-			System.out.println("channelRead : " + msgAccepted);
-			
-			//ClientFrame.getInstance().updateText(msgAccepted);
-//			buf.writeBytes(bytes);
-//			System.out.println(new String(bytes));
-		} finally {
-			if(buf != null) ReferenceCountUtil.release(buf);
-		}
-	}
-
+class ClientHandler extends SimpleChannelInboundHandler<TankJoinMsg> {
+	
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
 		//网络都是通过比特流01000101110，来传数据
@@ -118,6 +105,24 @@ class ClientHandler extends ChannelInboundHandlerAdapter {
 		//ctx.writeAndFlush(buf);
 		
 		//TankMsgEncode可以将TankMsg转换为ByteBuf
-		ctx.writeAndFlush(null);
+		ctx.writeAndFlush(new TankJoinMsg(TankFrame.getInstance().getMainTank()));
+	}
+	
+	@Override
+	protected void channelRead0(ChannelHandlerContext ctx, TankJoinMsg msg) throws Exception {
+		
+		//现在有一个问题，后来加入游戏的tank不能接收到之前加入游戏tank的信息，怎么处理？
+		//1. 接收到tank信息时，判断是否是主战坦克，不处理主战坦克的消息
+		//2. 非主站坦克加入到自己的集合中
+		//3. 向服务器发送自己的主站坦克的消息（目的是发给新加入游戏的client）
+		if(msg.id.equals(TankFrame.getInstance().getMainTank().getId())
+				|| TankFrame.getInstance().findByUUID(msg.id) != null) {
+			return;
+		}
+		
+		Tank t = new Tank(msg);
+		TankFrame.getInstance().addTank(t);
+		
+		ctx.writeAndFlush(new TankJoinMsg(TankFrame.getInstance().getMainTank()));
 	}
 }

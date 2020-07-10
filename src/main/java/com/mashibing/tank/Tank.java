@@ -1,11 +1,15 @@
 package com.mashibing.tank;
 
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.util.Random;
 import java.util.UUID;
 
+import com.mashibing.tank.net.TankJoinMsg;
+
 public class Tank {
+	
 	private static final int SPEED = 2;
 	public static int WIDTH = ResourceMgr.goodTankU.getWidth();
 
@@ -16,11 +20,11 @@ public class Tank {
 	UUID id = UUID.randomUUID();
 	
 	private Random random = new Random();
-
+	
 	private int x, y;
-
+	
 	private Dir dir = Dir.DOWN;
-
+	
 	private boolean moving = true;
 	private TankFrame tf = null;
 	private boolean living = true;
@@ -39,36 +43,18 @@ public class Tank {
 		rect.width = WIDTH;
 		rect.height = HEIGHT;
 	}
+	
+	public Tank(TankJoinMsg msg) {
+		new Tank(msg.x, msg.y, msg.dir, msg.group, null);
+	}
+	
 	public void fire() {
 		int bX = this.x + Tank.WIDTH/2 - Bullet.WIDTH/2;
 		int bY = this.y + Tank.HEIGHT/2 - Bullet.HEIGHT/2;
 		
 		tf.bullets.add(new Bullet(bX, bY, this.dir, this.group, this.tf));
 		
-		if(this.group == Group.GOOD) new Thread(()->new Audio("audio/tank_fire.wav").play()).start();
-	}
-	
-	public Dir getDir() {
-		return dir;
-	}
-	
-	public int getX() {
-		return x;
-	}
-	
-	
-	public Group getGroup() {
-		return group;
-	}
-	public void setGroup(Group group) {
-		this.group = group;
-	}
-	public int getY() {
-		return y;
-	}
-
-	public boolean isMoving() {
-		return moving;
+		//if(this.group == Group.GOOD) new Thread(()->new Audio("audio/tank_fire.wav").play()).start();
 	}
 
 	private void move() {
@@ -100,7 +86,6 @@ public class Tank {
 		//update rect
 		rect.x = this.x;
 		rect.y = this.y;
-		
 	}
 
 	private void boundsCheck() {
@@ -118,7 +103,10 @@ public class Tank {
 	public void paint(Graphics g) {
 		if(!living) tf.tanks.remove(this);
 		
-		
+		Color c = g.getColor();
+		g.setColor(Color.YELLOW);
+		g.drawString(id.toString(), this.x, this.y-10);
+		g.setColor(c);
 		
 		switch(dir) {
 		case LEFT:
@@ -136,22 +124,17 @@ public class Tank {
 		}
 	
 		move();
-	
 	}
-
 
 	public void setDir(Dir dir) {
 		this.dir = dir;
 	}
-
 	public void setMoving(boolean moving) {
 		this.moving = moving;
 	}
-
 	public void setX(int x) {
 		this.x = x;
 	}
-
 	public void setY(int y) {
 		this.y = y;
 	}
@@ -164,7 +147,25 @@ public class Tank {
 	public void setId(UUID id) {
 		this.id = id;
 	}
-	
-	
+	public Dir getDir() {
+		return dir;
+	}
+	public int getX() {
+		return x;
+	}
+	public Group getGroup() {
+		return group;
+	}
+	public void setGroup(Group group) {
+		this.group = group;
+	}
+	public int getY() {
+		return y;
+	}
+	public boolean isMoving() {
+		return moving;
+	}
 
 }
+
+
